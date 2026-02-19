@@ -1,11 +1,11 @@
 using Microsoft.Extensions.AI;
 using Anthropic;
 using OpenAI;
+using System.ComponentModel;
 
 // Configurar las API keys desde variables de entorno
 var anthropicApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
 var openAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-
 if (string.IsNullOrEmpty(anthropicApiKey) || string.IsNullOrEmpty(openAiApiKey))
 {
     Console.WriteLine("Error: Debes configurar las variables de entorno:");
@@ -14,19 +14,49 @@ if (string.IsNullOrEmpty(anthropicApiKey) || string.IsNullOrEmpty(openAiApiKey))
     return;
 }
 
-// Crear los clientes usando IChatClient (interfaz unificada de Microsoft.Extensions.AI)
+// Definir la herramienta para capturar datos personales
+AIFunction capturarDatosPersonales = AIFunctionFactory.Create(
+    ([Description("Nombre del usuario")] string? nombre,
+     [Description("Edad del usuario en años")] int? edad,
+     [Description("Sexo del usuario: masculino o femenino")] string? sexo) =>
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("\n>>> [TOOL: CapturarDatosPersonales]");
+        if (nombre != null) Console.WriteLine($"    Nombre : {nombre}");
+        if (edad   != null) Console.WriteLine($"    Edad   : {edad}");
+        if (sexo   != null) Console.WriteLine($"    Sexo   : {sexo}");
+        Console.ResetColor();
+
+        // Aquí puedes guardar en DB, llamar una API, etc.
+        return "Datos personales registrados correctamente.";
+    },
+    "CapturarDatosPersonales",
+    "Llama a esta función cuando el usuario mencione su nombre, edad o sexo para registrar sus datos personales.");
+
+var chatOptions = new ChatOptions
+{
+    Tools = [capturarDatosPersonales]
+};
+
+// Crear clientes con middleware de invocación automática de herramientas
 IChatClient claudeClient = new AnthropicClient(new() { ApiKey = anthropicApiKey })
-    .AsIChatClient("claude-sonnet-4-20250514");
+    .AsIChatClient("claude-sonnet-4-20250514")
+    .AsBuilder()
+    .UseFunctionInvocation()
+    .Build();
 
 IChatClient gptClient = new OpenAIClient(openAiApiKey)
     .GetChatClient("gpt-4o")
-    .AsIChatClient();
+    .AsIChatClient()
+    .AsBuilder()
+    .UseFunctionInvocation()
+    .Build();
 
 // Diccionario de proveedores
 var providers = new Dictionary<string, IChatClient>
 {
     ["claude"] = claudeClient,
-    ["gpt"] = gptClient
+    ["gpt"]    = gptClient
 };
 
 Console.WriteLine("=== Agente Multi-IA (Microsoft.Extensions.AI) ===");
@@ -45,9 +75,7 @@ while (true)
     Console.WriteLine();
     Console.Write($"[{currentProvider.ToUpper()}] > ");
     var input = Console.ReadLine();
-
-    if (string.IsNullOrWhiteSpace(input))
-        continue;
+    if (string.IsNullOrWhiteSpace(input)) continue;
 
     if (input.StartsWith("/"))
     {
@@ -76,10 +104,7 @@ while (true)
 
     try
     {
-        var providersToUse = currentProvider == "ambos"
-            ? providers.Keys.ToList()
-            : [currentProvider];
-
+        var providersToUse = currentProvider == "ambos" ? providers.Keys.ToList() : [currentProvider];
         foreach (var providerName in providersToUse)
         {
             Console.WriteLine($"\n--- {GetDisplayName(providerName)} ---");
@@ -93,16 +118,16 @@ while (true)
     }
 }
 
-// Función unificada para enviar mensajes - misma interfaz para todos los proveedores
+// Función unificada para enviar mensajes - pasa las tools en las opciones
 async Task<string> SendMessageAsync(IChatClient client, string message)
 {
-    var response = await client.GetResponseAsync(message);
+    var response = await client.GetResponseAsync(message, chatOptions);
     return response.Text ?? "Sin respuesta";
 }
 
 string GetDisplayName(string provider) => provider switch
 {
     "claude" => "Claude Sonnet 4",
-    "gpt" => "GPT-4o",
-    _ => provider
+    "gpt"    => "GPT-4o",
+    _        => provider
 };

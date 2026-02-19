@@ -51,6 +51,9 @@ Generated\ Files/
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+Properties/
+launchSettings.json
+
 # NUnit
 *.VisualState.xml
 TestResult.xml
