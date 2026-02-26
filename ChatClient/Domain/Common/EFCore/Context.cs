@@ -1,9 +1,10 @@
-﻿using AgentTest.Agent.Domain.Common.EFCore.Configuration;
-using AgentTest.Agent.Domain.MemoryAggregate.Domain;
+﻿using AgentTest.ChatClient.Domain.Common.EFCore.Configuration;
+using AgentTest.ChatClient.Domain.MemoryAggregate.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.NameTranslation;
 namespace AgentTest.Agent.Domain.Common.EFCore;
+
 public class Context(DbContextOptions<Context> options) : DbContext(options)
 {
     public DbSet<Memory> Memories { get; set; }

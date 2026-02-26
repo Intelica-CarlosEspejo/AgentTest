@@ -8,7 +8,7 @@ public class Provider
     public class Model
     {
         //Anthropic
-        public ModelType Sonet4 { get; private set; } = new("claude-sonnet-4-20250514");
+        public ModelType Sonet4 { get; private set; } = new("claude-sonnet-4-6");
         //OpenAI
         public ModelType GPT4o { get; private set; } = new("gpt-4o");
     }

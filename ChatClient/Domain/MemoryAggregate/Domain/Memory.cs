@@ -1,4 +1,5 @@
-namespace AgentTest.Agent.Domain.MemoryAggregate.Domain;
+namespace AgentTest.ChatClient.Domain.MemoryAggregate.Domain;
+
 public class Memory(string message, bool isResumen)
 {
     public Guid MemoryID { get; private set; } = Guid.NewGuid();

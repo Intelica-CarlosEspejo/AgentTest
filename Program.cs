@@ -1,7 +1,7 @@
 using AgentTest.Agent.Domain.Common.EFCore;
-using AgentTest.Agent.Domain.MemoryAggregate.Application.Interface;
-using AgentTest.Agent.Domain.MemoryAggregate.Infrastructure;
 using AgentTest.ChatClient;
+using AgentTest.ChatClient.Domain.MemoryAggregate.Application.Interface;
+using AgentTest.ChatClient.Domain.MemoryAggregate.Infrastructure;
 // using Anthropic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;

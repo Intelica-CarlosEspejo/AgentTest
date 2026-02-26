@@ -1,18 +1,31 @@
-﻿using AgentTest.Agent.Domain.Common.EFCore;
+using AgentTest.Agent.Domain.Common.EFCore;
 using AgentTest.Agent.Domain.MemoryAggregate.Application.DTO;
-using AgentTest.Agent.Domain.MemoryAggregate.Application.Interface;
-using AgentTest.Agent.Domain.MemoryAggregate.Domain;
-namespace AgentTest.Agent.Domain.MemoryAggregate.Infrastructure;
+using AgentTest.ChatClient.Domain.MemoryAggregate.Application.Interface;
+using AgentTest.ChatClient.Domain.MemoryAggregate.Domain;
+namespace AgentTest.ChatClient.Domain.MemoryAggregate.Infrastructure;
+
 public class MemoryRepository(Context context) : IMemoryRepository
 {
     public void Create(Memory memory)
     {
-        context.Add(memory);
-        context.SaveChangesAsync();
+        context.Memories.Add(memory);
+        context.SaveChanges();
     }
-    public List<MemorySimpleResponse> GetResponse()
+    public void Delete(List<Guid> ids)
     {
-        var query = from memory in context.Memories select new MemorySimpleResponse(memory.MemoryID, memory.Message);
-        return [.. query];
+        var memories = context.Memories.Where(m => ids.Contains(m.MemoryID)).ToList();
+        context.Memories.RemoveRange(memories);
+        context.SaveChanges();
+    }
+    public List<MemorySimpleResponse> GetResponse(int maxMessages)
+    {
+        //Todos los resumenes
+        var resumenes = context.Memories.Where(m => m.IsResumen).Select(m => new MemorySimpleResponse(m.MemoryID, m.Message, true)).Take(maxMessages).ToList();
+        //Calcular restantes
+        var resumenCount = Math.Min(resumenes.Count, maxMessages);
+        var remaining = maxMessages - resumenCount;
+        //Completar con no resumenes
+        var nonResumenes = context.Memories.Where(m => !m.IsResumen).Select(m => new MemorySimpleResponse(m.MemoryID, m.Message, false)).Take(remaining).ToList();
+        return [.. resumenes.Take(resumenCount), .. nonResumenes];
     }
 }
